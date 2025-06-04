@@ -30,6 +30,7 @@ public class YourPlayerMindPleaseRename : AbstractPlayerMind
         {
             decideMove(enemys);
         }
+        useUnusedPoints();
 
 
 
@@ -47,7 +48,7 @@ public class YourPlayerMindPleaseRename : AbstractPlayerMind
             if (Body.RemainingShots == 0) Body.Reload3();
             Body.Tag5(enemies.First().Position);
         }
-            
+
         if (_goal == null || Body.GetDistance(_goal) == 1)
         {
             var newX = RandomHelper.Random.Next(_mindLayer.Width);
@@ -213,6 +214,7 @@ public class YourPlayerMindPleaseRename : AbstractPlayerMind
         //Wenn die eigene Flagge gerade vom gegner getragen wird
         if (ownFlag.PickedUp)
         {
+            if (Body.Stance != Stance.Standing) Body.ChangeStance2(Stance.Standing); //TODO: hinuzgefügt ungleich den rules.txt
             if (Body.GetDistance(enemyFlag.Position) <= 10)
             {
                 Body.GoTo(enemyFlag.Position);
@@ -221,7 +223,6 @@ public class YourPlayerMindPleaseRename : AbstractPlayerMind
             {
                 Body.GoTo(ownFlag.Position);
             }
-
         }
         else
         {
@@ -263,6 +264,29 @@ public class YourPlayerMindPleaseRename : AbstractPlayerMind
                 Body.GoTo(home);
             }
         }
+    }
+
+    /// Utilizes any remaining action points to perform tasks such as reloading and exploring the environment
+    /// for hills, ditches, and barriers. Communicates the discovered positions to the team.
+    /// /
+    private void useUnusedPoints()
+    {
+        Body.Reload3();
+        foreach (var hillPosition in Body.ExploreHills1())
+        {
+            TeamCommuniation.Instance._HillPositions.Add(hillPosition); //TODO: Das hinzufügen so richtig?
+        }
+
+        foreach (var ditchPosition in Body.ExploreDitches1())
+        {
+            TeamCommuniation.Instance._DitchPositions.Add(ditchPosition); //TODO: Das hinzufügen so richtig?
+        }
+        
+        foreach (var barrierPosition in Body.ExploreBarriers1())
+        {
+            TeamCommuniation.Instance._barrierPositions.Add(barrierPosition); //TODO: Das hinzufügen so richtig?
+        }
+
     }
 
 }
