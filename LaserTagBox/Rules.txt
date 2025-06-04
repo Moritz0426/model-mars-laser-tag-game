@@ -33,7 +33,6 @@ def flee
             LayDown
     
         
-missing
 def decideMove
     exploreFlags
         if OwnFlag == carried
@@ -74,8 +73,7 @@ def maybeShoot
 def Reload
     if remainingShots == 0
         reload
-  
-missing      
+      
 def shoot 
     if action Points >= 7
         layDown
