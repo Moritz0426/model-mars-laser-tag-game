@@ -2,15 +2,13 @@
 
 reset fleed
 Reload
-MaybeKill(min 2)
+MaybeShoot(min 2)
 if !fleed
     decideMove
 UseUnusedPoints
 
 
 
-Frage -> Kann ein Player final sterben? (Capture The flag)
-NAch Gegner Ausschau halten
 Wenn Gegner gefunden ->
     Wenn 8 Action Points -> ExploreExplosiveBarrels -> Wenn Barrel nähe Feind -> Auf Barrel Schießen
     Wenn Munition -> hinlegen und schießen 
@@ -35,7 +33,7 @@ def flee
             LayDown
     
         
-
+missing
 def decideMove
     exploreFlags
         if OwnFlag == carried
@@ -61,7 +59,7 @@ def decideMove
                 layDown
             else 
                 moveHome
-def maybeKill
+def maybeShoot
     exploreEnemies
     if found
         if found >= 2
@@ -76,7 +74,8 @@ def maybeKill
 def Reload
     if remainingShots == 0
         reload
-        
+  
+missing      
 def shoot 
     if action Points >= 7
         layDown
