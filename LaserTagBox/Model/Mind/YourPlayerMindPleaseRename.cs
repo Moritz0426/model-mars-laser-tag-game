@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using LaserTagBox.Model.Items;
 using LaserTagBox.Model.Shared;
 using Mars.Common.Core.Random;
 using Mars.Interfaces.Environments;
@@ -22,13 +23,20 @@ public class YourPlayerMindPleaseRename : AbstractPlayerMind
 
     public override void Tick()
     {
+        _isFleeing = false;
         maybeReload();
-        
-        
-        
-        
-        
-        if (Body.ActionPoints < 10)
+        List<EnemySnapshot> enemys = maybeShoot(); //maybe he is fleeing from now on
+        if (!_isFleeing)
+        {
+            decideMove(enemys);
+        }
+
+
+
+
+
+        /*
+         if (Body.ActionPoints < 10)
         {
             return;  //TODO execution order fix
         }
@@ -49,6 +57,7 @@ public class YourPlayerMindPleaseRename : AbstractPlayerMind
 
         var moved = Body.GoTo(_goal);
         if (!moved) _goal = null;
+        */
 
     }
 
@@ -97,7 +106,7 @@ public class YourPlayerMindPleaseRename : AbstractPlayerMind
     /*
      * 
      */
-    private void maybeShoot()
+    private List<EnemySnapshot> maybeShoot() //TODO: anstatt als Parameter zurück zu geben, in Map Speichern
     {
         List<EnemySnapshot> enemyList = Body.ExploreEnemies1();
         if (!enemyList.IsEmpty())
@@ -135,6 +144,8 @@ public class YourPlayerMindPleaseRename : AbstractPlayerMind
                 shoot(closestEnemyPosition);
             }
         }
+
+        return enemyList;
     }
 
     /// Determines and retrieves the position of the closest enemy from a given list of enemies.
@@ -186,10 +197,72 @@ public class YourPlayerMindPleaseRename : AbstractPlayerMind
         return positionDerKürzestenDistanz;
     }
 
-    // Methode zur Berechnung der Manhattan-Distanz
+    /// Methode zur Berechnung der Manhattan-Distanz
     private double getDistance(Position position1, Position position2)
     {
         return Math.Abs(position2.X - position1.X) + Math.Abs(position2.Y - position1.Y);
+    }
+
+    private void decideMove(List<EnemySnapshot> enemys) //TODO: anstatt als Parameter zu übergeben, durch Map Speichern
+    {
+        //die 2 Flaggen holen
+        List<FlagSnapshot> flags = Body.ExploreFlags2();
+        FlagSnapshot ownFlag = flags.FirstOrDefault(f => f.Team == Body.Color);
+        FlagSnapshot enemyFlag = flags.FirstOrDefault(f => f.Team != Body.Color);
+        
+        //Wenn die eigene Flagge gerade vom gegner getragen wird
+        if (ownFlag.PickedUp)
+        {
+            if (Body.GetDistance(enemyFlag.Position) <= 10)
+            {
+                Body.GoTo(enemyFlag.Position);
+            }
+            else
+            {
+                Body.GoTo(ownFlag.Position);
+            }
+
+        }
+        else
+        {
+            if (Body.ActionPoints == 0)
+            {
+                Body.GoTo(enemyFlag.Position);
+            }
+
+            if (Body.ActionPoints == 4)
+            {
+                if (Body.Stance != Stance.Standing)
+                {
+                    Body.ChangeStance2(Stance.Standing);
+                    Body.GoTo(enemyFlag.Position);
+                    Body.ChangeStance2(Stance.Lying);
+                }
+            }
+            
+            if (Body.ActionPoints >= 2)
+            {
+                if (Body.Stance != Stance.Standing)
+                {
+                    Body.ChangeStance2(Stance.Standing);
+                    Body.GoTo(enemyFlag.Position);
+                }
+            }
+        }
+
+        if (Body.CarryingFlag)
+        {
+            Position home = Body.ExploreOwnFlagStand();
+            if (enemys.Count >= 0)
+            {
+                Body.GoTo(home);
+                Body.ChangeStance2(Stance.Lying);
+            }
+            else
+            {
+                Body.GoTo(home);
+            }
+        }
     }
 
 }
