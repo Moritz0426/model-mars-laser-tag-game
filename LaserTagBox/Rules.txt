@@ -1,0 +1,93 @@
+﻿Rules
+
+reset fleed
+Reload
+MaybeKill(min 2)
+if !fleed
+    decideMove
+UseUnusedPoints
+
+
+
+Frage -> Kann ein Player final sterben? (Capture The flag)
+NAch Gegner Ausschau halten
+Wenn Gegner gefunden ->
+    Wenn 8 Action Points -> ExploreExplosiveBarrels -> Wenn Barrel nähe Feind -> Auf Barrel Schießen
+    Wenn Munition -> hinlegen und schießen 
+    Wenn keine Munition -> 
+Wenn Kein Gegner gefunden
+    Wenn Munition <2 -> Reload
+    ExploreFlags ->
+        Wenn Eigene Flagge == Carried
+            -> Gehe in Richtung Flagge -> Explore Enemies -> Schuss 
+        Wenn Eigene Flagge != Carried
+            -> Gehe in Richtung Gegner Flagge -> Explore Enemies -> Schuss
+
+def flee
+    exploreExplosiveBarrels
+        if near Barrel 
+            moveAway
+            layDown
+        
+    explore ditches
+        if ditch 
+            moveTowards ditch, but not near barrel
+            LayDown
+    
+        
+
+def decideMove
+    exploreFlags
+        if OwnFlag == carried
+            if distanceToEnemyFlag <= 10
+                moveTowardsEnemyFlag
+            else
+                moveToOwnFlag
+        else
+            if Action Points == 0
+                move towards Flag
+            if Action Points >= 2
+                if Stance != standing
+                    standUp
+                    move towards Flag
+            if Action Points == 4
+                if Stance != standing
+                    standUp
+                    move towards Flag
+                    layDown
+        if CarryFlag
+            if enemyThere
+                moveHome
+                layDown
+            else 
+                moveHome
+def maybeKill
+    exploreEnemies
+    if found
+        if found >= 2
+            flee
+            Set Fleed = True 
+        if actionPoints >= 8
+            exploreExplosive
+            ExplosiveNerarEnemie?
+            shoot (Explosive or Enemie)
+        else shoot
+
+def Reload
+    if remainingShots == 0
+        reload
+        
+def shoot 
+    if action Points >= 7
+        layDown
+    Tag
+
+ Mit übrigen Action Points Infos Sammeln:
+ 1. Reload 
+ 2. ExploreHills
+ 3. ExploreDitches
+ 4. Explore Barriers          
+Variable Gathered Information last Tick
+    
+        
+    
