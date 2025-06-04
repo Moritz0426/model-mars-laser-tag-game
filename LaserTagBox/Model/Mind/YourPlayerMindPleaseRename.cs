@@ -111,57 +111,66 @@ public class YourPlayerMindPleaseRename : AbstractPlayerMind
             if (Body.ActionPoints >= 8)
             {
                 //Nahesten Enemy erhalten
-                int closestEnemyDistance = int.MaxValue;
-                Position closestEnemyPosition = new Position();
-                foreach (EnemySnapshot enemy in enemyList)
-                {
-                    if (Body.GetDistance(enemy.Position) < closestEnemyDistance)
-                    {
-                        closestEnemyPosition = enemy.Position;
-                    }
-
-                }
+                Position closestEnemyPosition = getClosestEnemy(enemyList);
                 
+                //Erhalte näheste Barrel zu enemy. Null, wenn keine Barrel in Sichtweite
                 List<Position> explosiveBarrelsList = Body.ExploreExplosiveBarrels1();
-                
-                //Erhalte naheste Barrel zu enemy.
-                Position closestBarrelToEnemy;
-                if (!explosiveBarrelsList.IsEmpty())
-                {
-                    closestBarrelToEnemy = getClosestBarrelToEnemy(explosiveBarrelsList, closestEnemyPosition);
-                }
+                Position closestBarrelToEnemy = getClosestBarrelToEnemy(explosiveBarrelsList, closestEnemyPosition);
 
                 //wenn Gegner im Radius von 3 von Barrel ist, auf Barrel schießen
-                if (getDistance(closestEnemyPosition, closestBarrelToEnemy) < 4.0)
+                if (closestBarrelToEnemy != null && getDistance(closestEnemyPosition, closestBarrelToEnemy) < 4.0)
                 {
                     shoot(closestBarrelToEnemy);
                 }
-                else //einfach so auf gegner schießen
+                else //einfach so auf gegner schießen. 
                 {
-                    shoot(closestEnemyDistance);
+                    shoot(closestEnemyPosition); //ist nicht null, weil oben geprüft
                 }
                 
             }
             else
             {
                 //Nahesten Enemy erhalten
-                int closestEnemyDistance = int.MaxValue;
-                Position closestEnemyPosition = new Position();
-                foreach (EnemySnapshot enemy in enemyList)
-                {
-                    if (Body.GetDistance(enemy.Position) < closestEnemyDistance)
-                    {
-                        closestEnemyPosition = enemy.Position;
-                    }
-
-                }
+                Position closestEnemyPosition = getClosestEnemy(enemyList);
                 shoot(closestEnemyPosition);
             }
         }
     }
-    
+
+    /// Determines and retrieves the position of the closest enemy from a given list of enemies.
+    /// <param name="enemies">A list of enemies to evaluate for proximity.</param> <return>The position of the closest enemy, or null if the list is empty or null.</return>
+    /// /
+    private Position getClosestEnemy(List<EnemySnapshot> enemys)
+    {
+        if (enemys == null || enemys.Count == 0)
+        {
+            return null;
+        }
+
+        int closestEnemyDistance = int.MaxValue;
+        Position closestEnemyPosition = new Position();
+        foreach (EnemySnapshot enemy in enemys)
+        {
+            if (Body.GetDistance(enemy.Position) < closestEnemyDistance)
+            {
+                closestEnemyPosition = enemy.Position;
+            }
+
+        }
+
+        return closestEnemyPosition;
+    }
+
+    /// Determines and returns the closest explosive barrel to a specified enemy position from a given list of barrels.
+    /// <param name="explosiveBarrelsList">List of positions representing the explosive barrels in the environment.</param> <param name="closestEnemyPosition">The position of the target enemy to compare distances against.</param> <return>The position of the closest explosive barrel to the specified enemy.</return>
+    /// /
     public Position getClosestBarrelToEnemy(List<Position> explosiveBarrelsList, Position closestEnemyPosition)
     {
+        if (explosiveBarrelsList == null || explosiveBarrelsList.Count == 0 || closestEnemyPosition == null)
+        {
+            return null;
+        }
+
         int shortestDistance = int.MaxValue;
         Position positionDerKürzestenDistanz = new Position();
         
