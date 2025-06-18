@@ -16,10 +16,13 @@ public class RuledPlayerMind : AbstractPlayerMind
     private PlayerMindLayer _mindLayer;
     private Position _goal;
     private bool _isFleeing;
+    private String _role;
 
     public override void Init(PlayerMindLayer mindLayer)
     {
         _mindLayer = mindLayer;
+        // returnValue hypothetical could be null, but in 3 Player Game will never be null
+        _role = TeamCommuniation.Instance.claimRole();
     }
 
     public override void Tick()
@@ -75,7 +78,7 @@ public class RuledPlayerMind : AbstractPlayerMind
     {
         List<Position> ditchesPositions = Body.ExploreDitches1();
         Position closestditch;
-        if(ditchesPositions.Count != 0)
+        if(ditchesPositions != null && ditchesPositions.Count != 0)
         {
             closestditch = ditchesPositions.First();
             foreach (var pos in ditchesPositions)
@@ -115,9 +118,10 @@ public class RuledPlayerMind : AbstractPlayerMind
     private List<EnemySnapshot> maybeShoot() //TODO: anstatt als Parameter zurück zu geben, in Map Speichern
     {
         List<EnemySnapshot> enemyList = Body.ExploreEnemies1();
+        List<FriendSnapshot> friendList = Body.ExploreTeam();
         if (!enemyList.IsEmpty())
         {
-            if (enemyList.Count() >= 2)
+            if (enemyList.Count() > friendsCloseToMe())
             {
                 flee();
                 _isFleeing = true;
@@ -131,9 +135,9 @@ public class RuledPlayerMind : AbstractPlayerMind
                 //Erhalte näheste Barrel zu enemy. Null, wenn keine Barrel in Sichtweite
                 List<Position> explosiveBarrelsList = Body.ExploreExplosiveBarrels1();
                 Position closestBarrelToEnemy = getClosestBarrelToEnemy(explosiveBarrelsList, closestEnemyPosition);
-
-                //wenn Gegner im Radius von 3 von Barrel ist, auf Barrel schießen
-                if (closestBarrelToEnemy != null && getDistance(closestEnemyPosition, closestBarrelToEnemy) < 4.0)
+            
+                //wenn Gegner im Radius von 3 von Barrel ist, auf Barrel schießen. Außer ein Teampartner ist in der nähe der Barrel
+                if (closestBarrelToEnemy != null && getDistance(closestEnemyPosition, closestBarrelToEnemy) < 4.0 && !isFriendNearABarrel(closestBarrelToEnemy))
                 {
                     shoot(closestBarrelToEnemy);
                 }
@@ -178,6 +182,26 @@ public class RuledPlayerMind : AbstractPlayerMind
         return closestEnemyPosition;
     }
 
+    /**
+     * Überprüft ob ein ein Friend (jemand aus dem eigenen Team) in der Nähe der eigegebenen Barrel ist.
+     * (Das wird genutzt um zu schauen ob man auf das Fass schießen kann, ohne dabei einen Teammate zu verletzen.
+     * @param barrelPositon
+     */
+    private bool isFriendNearABarrel(Position barrelPosition)
+    {
+        List<FriendSnapshot> friendList = Body.ExploreTeam();
+
+        foreach (FriendSnapshot friend in friendList)
+        {
+            if (getDistance(friend.Position, barrelPosition) < 4)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    
     /// Determines and returns the closest explosive barrel to a specified enemy position from a given list of barrels.
     /// <param name="explosiveBarrelsList">List of positions representing the explosive barrels in the environment.</param> <param name="closestEnemyPosition">The position of the target enemy to compare distances against.</param> <return>The position of the closest explosive barrel to the specified enemy.</return>
     /// /
@@ -223,6 +247,8 @@ public class RuledPlayerMind : AbstractPlayerMind
             Position home = Body.ExploreOwnFlagStand();
             if (enemys != null && !enemys.IsEmpty())
             {
+                if(Body.Stance != Stance.Standing && Body.ActionPoints >= 4)
+                    Body.ChangeStance2(Stance.Standing);
                 Body.GoTo(home);
                 Body.ChangeStance2(Stance.Lying);
             }
@@ -234,6 +260,15 @@ public class RuledPlayerMind : AbstractPlayerMind
             return;
         }
         
+        //Wenn die EnemyFlag gerade von einem aus dem Team getragen wird, dann gehe auf die Position rechts von ihm.
+        if (!Body.CarryingFlag && enemyFlag.PickedUp)
+        {
+            if (Body.Stance != Stance.Standing) Body.ChangeStance2(Stance.Standing);
+            Position nextToFlag = new Position(enemyFlag.Position.X + 1, enemyFlag.Position.Y);
+            Body.GoTo(nextToFlag);
+        }
+
+
         //Wenn die eigene Flagge gerade vom gegner getragen wird
         if (!ownFlag.Position.Equals(Body.ExploreOwnFlagStand()))
         {
@@ -306,9 +341,92 @@ public class RuledPlayerMind : AbstractPlayerMind
                 teamCom._barrierPositions.Add(barrierPosition); //TODO: Das hinzufügen so richtig?
             }
         }
+
+        
         
         
 
     }
+    private int friendsCloseToMe()
+    {
+        List<FriendSnapshot> team = Body.ExploreTeam();
+        int count = 0;
+        foreach (FriendSnapshot friend in team)
+        {
+            if(getDistance(friend.Position, Body.Position) <= 3)
+                count++;
+        }
+        return count;
+    }
 
+}
+
+
+
+public sealed class TeamCommuniation
+{
+    
+    private static readonly Lazy<TeamCommuniation> _instance =
+        new Lazy<TeamCommuniation>(() => new TeamCommuniation());
+    public static TeamCommuniation Instance => _instance.Value;
+
+    public HashSet<Position> _waterPositions;
+    public HashSet<Position> _barrierPositions;
+    public HashSet<Position> _hillPositions;
+    public HashSet<Position> _ditchPositions;
+    private Dictionary<String, Boolean> _roles;
+    
+    
+    
+    private TeamCommuniation()
+    {
+        _waterPositions = new HashSet<Position>();
+        _barrierPositions = new HashSet<Position>();
+        _hillPositions = new HashSet<Position>();
+        _ditchPositions = new HashSet<Position>();
+        _roles = new Dictionary<String, Boolean>();
+        _roles.Add("1",false);
+        _roles.Add("2",false);
+        _roles.Add("3",false);
+        
+    }
+
+    public HashSet<Position> _WaterPositions
+    {
+        get => _waterPositions;
+        set => _waterPositions = value;
+    }
+
+    public HashSet<Position> _BarrierPositions
+    {
+        get => _barrierPositions;
+        set => _barrierPositions = value;
+    }
+
+    public HashSet<Position> _HillPositions
+    {
+        get => _hillPositions;
+        set => _hillPositions = value;
+    }
+
+    public HashSet<Position> _DitchPositions
+    {
+        get => _ditchPositions;
+        set => _ditchPositions = value;
+    }
+
+    public String claimRole()
+    {
+        String returnRole = "";
+        foreach (var role in _roles)
+        {
+            if (role.Value)
+            {
+                _roles.Add(role.Key, false);
+                return role.Key;
+            }
+        }
+        return null;
+    }
+    
 }

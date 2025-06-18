@@ -86,5 +86,16 @@ def shoot
  4. Explore Barriers          
 Variable Gathered Information last Tick
     
+Änderrungen:
+Wenn EnemyFlagge getragen wird und ich nicht der träger bin.
+    Go To Position Next to Flag
+    
+Wenn Überzahl dann nicht fliehen
+    
+def Teammate in BarrelRange (Position BarralPosition) (Firndly Fire verhindern)
+
+
+
+
         
     
