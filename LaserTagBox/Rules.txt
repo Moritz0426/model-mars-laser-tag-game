@@ -94,6 +94,16 @@ Wenn Überzahl dann nicht fliehen
     
 def Teammate in BarrelRange (Position BarralPosition) (Firndly Fire verhindern)
 
+Rollen: 
+Scout: 
+    Wenn möglich auf Hügel. Priorität auf Exploration und dann erst schießen
+    
+Flag Carrier 
+    Ziele: Flagge holen, überleben
+    
+
+    Ziel: schießen und beschützen von Flag Carrier (in der Nähe bleiben)
+
 
 
 
