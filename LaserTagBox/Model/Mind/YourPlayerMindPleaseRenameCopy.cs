@@ -1,6 +1,6 @@
 namespace LaserTagBox.Model.Mind;
 
-public class YourPlayerMindPleaseRenameCopy : YourPlayerMindPleaseRename
+public class RuledPlayerMindCopy : RuledPlayerMind
 {
        
 }

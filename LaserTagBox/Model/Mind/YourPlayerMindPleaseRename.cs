@@ -6,11 +6,12 @@ using LaserTagBox.Model.Items;
 using LaserTagBox.Model.Shared;
 using Mars.Common.Core.Random;
 using Mars.Interfaces.Environments;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using ServiceStack;
 
 namespace LaserTagBox.Model.Mind;
 
-public class YourPlayerMindPleaseRename : AbstractPlayerMind
+public class RuledPlayerMind : AbstractPlayerMind
 {
     private PlayerMindLayer _mindLayer;
     private Position _goal;
@@ -86,14 +87,18 @@ public class YourPlayerMindPleaseRename : AbstractPlayerMind
         }
         else
         {
-            List<FlagSnapshot> flags = Body.ExploreFlags2();
-            foreach (var flag in flags)
+            if (Body.ActionPoints >= 2)
             {
-                if (flag.Team.Equals(Body.Color))
+                List<FlagSnapshot> flags = Body.ExploreFlags2();
+                foreach (var flag in flags)
                 {
-                    Body.GoTo(flag.Position); 
+                    if (flag.Team.Equals(Body.Color))
+                    {
+                        Body.GoTo(flag.Position); 
+                    }
                 }
             }
+            
         }
         Body.ChangeStance2(Stance.Lying);
     }
@@ -208,14 +213,32 @@ public class YourPlayerMindPleaseRename : AbstractPlayerMind
     {
         //die 2 Flaggen holen
         List<FlagSnapshot> flags = Body.ExploreFlags2();
+        if (flags.IsEmpty())
+            return;
         FlagSnapshot ownFlag = flags.FirstOrDefault(f => f.Team == Body.Color);
         FlagSnapshot enemyFlag = flags.FirstOrDefault(f => f.Team != Body.Color);
         
+        if (Body.CarryingFlag)
+        {
+            Position home = Body.ExploreOwnFlagStand();
+            if (enemys != null && !enemys.IsEmpty())
+            {
+                Body.GoTo(home);
+                Body.ChangeStance2(Stance.Lying);
+            }
+            else
+            {
+                Body.GoTo(home);
+            }
+
+            return;
+        }
+        
         //Wenn die eigene Flagge gerade vom gegner getragen wird
-        if (ownFlag.PickedUp)
+        if (!ownFlag.Position.Equals(Body.ExploreOwnFlagStand()))
         {
             if (Body.Stance != Stance.Standing) Body.ChangeStance2(Stance.Standing); //TODO: hinuzgefügt ungleich den rules.txt
-            if (Body.GetDistance(enemyFlag.Position) <= 10)
+            if(nearestToFlag(enemyFlag.Position))     //(Body.GetDistance(enemyFlag.Position) <= 10)
             {
                 Body.GoTo(enemyFlag.Position);
             }
@@ -226,44 +249,26 @@ public class YourPlayerMindPleaseRename : AbstractPlayerMind
         }
         else
         {
-            if (Body.ActionPoints == 0)
-            {
-                Body.GoTo(enemyFlag.Position);
-            }
-
-            if (Body.ActionPoints == 4)
-            {
-                if (Body.Stance != Stance.Standing)
-                {
-                    Body.ChangeStance2(Stance.Standing);
-                    Body.GoTo(enemyFlag.Position);
-                    Body.ChangeStance2(Stance.Lying);
-                }
-            }
-            
+            if (Body.Stance != Stance.Standing && Body.ActionPoints >= 2)
+                Body.ChangeStance2(Stance.Standing);
+            Body.GoTo(enemyFlag.Position);
             if (Body.ActionPoints >= 2)
-            {
-                if (Body.Stance != Stance.Standing)
-                {
-                    Body.ChangeStance2(Stance.Standing);
-                    Body.GoTo(enemyFlag.Position);
-                }
-            }
+                Body.ChangeStance2(Stance.Lying);
         }
 
-        if (Body.CarryingFlag)
+        
+    }
+
+    private bool nearestToFlag(Position enemyFlag)
+    {
+        List<FriendSnapshot> team = Body.ExploreTeam();
+        foreach (FriendSnapshot friend in team)
         {
-            Position home = Body.ExploreOwnFlagStand();
-            if (enemys.Count >= 0)
-            {
-                Body.GoTo(home);
-                Body.ChangeStance2(Stance.Lying);
-            }
-            else
-            {
-                Body.GoTo(home);
-            }
+            if (getDistance(friend.Position, enemyFlag) <= getDistance(Body.Position, enemyFlag))
+                return false;
         }
+
+        return true;
     }
 
     /// Utilizes any remaining action points to perform tasks such as reloading and exploring the environment
@@ -272,20 +277,37 @@ public class YourPlayerMindPleaseRename : AbstractPlayerMind
     private void useUnusedPoints()
     {
         Body.Reload3();
-        foreach (var hillPosition in Body.ExploreHills1())
+        List<Position> hills = Body.ExploreHills1();
+        List<Position> ditches = Body.ExploreDitches1();
+        List<Position> barrels = Body.ExploreBarrels1();
+
+        TeamCommuniation teamCom = TeamCommuniation.Instance;
+        
+        if (hills != null && !hills.IsEmpty())
         {
-            TeamCommuniation.Instance._HillPositions.Add(hillPosition); //TODO: Das hinzufügen so richtig?
+            foreach (var hillPosition in hills)
+            {
+                teamCom._HillPositions.Add(hillPosition); //TODO: Das hinzufügen so richtig?
+            }
         }
 
-        foreach (var ditchPosition in Body.ExploreDitches1())
+        if (ditches != null && !ditches.IsEmpty())
         {
-            TeamCommuniation.Instance._DitchPositions.Add(ditchPosition); //TODO: Das hinzufügen so richtig?
+            foreach (var ditchPosition in ditches)
+            {
+                teamCom._DitchPositions.Add(ditchPosition); //TODO: Das hinzufügen so richtig?
+            }
+        }
+
+        if (barrels != null && !barrels.IsEmpty())
+        {
+            foreach (var barrierPosition in barrels)
+            {
+                teamCom._barrierPositions.Add(barrierPosition); //TODO: Das hinzufügen so richtig?
+            }
         }
         
-        foreach (var barrierPosition in Body.ExploreBarriers1())
-        {
-            TeamCommuniation.Instance._barrierPositions.Add(barrierPosition); //TODO: Das hinzufügen so richtig?
-        }
+        
 
     }
 
