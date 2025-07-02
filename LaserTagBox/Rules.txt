@@ -104,8 +104,24 @@ Flag Carrier
 
     Ziel: schießen und beschützen von Flag Carrier (in der Nähe bleiben)
 
+///
+gemeinsame Tabelle füt Gegnerpositionen?
 
+    Wir haben Gegner Flagge:
+    1x Flaggenträger
+    1x jemand der immer beim Flaggenträger bleibt
+    1x jemand der auch beim Flaggenträger, außer die eigene Flagge wird getragen. Der geht dann die eigene Flagge verteidigen
+    
+    Wir haben nicht Gegner Flagge && eigene Flagge nicht in der Base:
+    1x weiter auf Gegner Flagge
+    1x eigene Teamflagge verteidigen
+    1x eigene Teamflagge verteidigen
+    
+    Keine Flaggen im Besitz:
+    alle zu GegnerFlagge
 
+Wenn wir einen Gegner sehen, dann teien wir das den anderen mit
+die überprüfen dann ob sie auf ihn schiessen können und tun das dann ggf.
 
         
     
