@@ -28,7 +28,7 @@ internal static class Program
         description.AddAgent<PlayerBody, PlayerBodyLayer>();
 
         // USER: Add agents here
-        description.AddAgent<Malware, PlayerMindLayer>();
+        description.AddAgent<Malware1, PlayerMindLayer>();
         description.AddAgent<SecondFlagCollector, PlayerMindLayer>();
 
         // USER: Specify JSON configuration file here
